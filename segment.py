@@ -92,5 +92,25 @@ class Segment(object):
         self.radius = r
         self.deviations = np.vstack((angles, sampled_radii)).transpose()
 
+        # Work out dimensions of remapped imae
+        polar_shape = (128, 512)
+
+        # Get angle and radius image
+        phi, r = np.meshgrid(
+            np.linspace(2.0*np.pi, 0, polar_shape[1], endpoint=False),
+            np.linspace(np.ceil(self.radius), 0, polar_shape[0])
+        )
+
+        # Compute X- and Y- image
+        x = np.array(self.centre[0] + np.sin(phi) * r, dtype=np.float32)
+        y = np.array(self.centre[1] + np.cos(phi) * r, dtype=np.float32)
+
+        coin_smooth = cv2.blur(self.input_image, (3,3))
+        coin_edge = cv2.Laplacian(coin_smooth, 8, scale=3)
+        coin_edge = coin_edge / float(np.amax(coin_edge))
+
+        self.edge_image = coin_edge
+        self.polar_image = cv2.remap(coin_edge, x, y, cv2.INTER_LINEAR)
+
 
 # vim:sw=4:sts=4:et
